@@ -31,16 +31,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Determine base path
-        id: base-path
-        run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "path=/TGP-Land-Viewer-Claude-/" >> $GITHUB_OUTPUT
-          else
-            BRANCH_NAME=$(echo ${{ github.ref }} | sed 's|refs/heads/||' | sed 's|/|-|g')
-            echo "path=/TGP-Land-Viewer-Claude-/preview/$BRANCH_NAME/" >> $GITHUB_OUTPUT
-          fi
-
       - name: Update vite config for base path
         run: |
           cat > vite.config.ts << 'EOF'
@@ -49,7 +39,7 @@ jobs:
 
           export default defineConfig({
             plugins: [react()],
-            base: '${{ steps.base-path.outputs.path }}',
+            base: '/TGP-Land-Viewer-Claude-/',
           })
           EOF
 
