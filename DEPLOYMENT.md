@@ -225,3 +225,4 @@ All deployments:
 - GitHub Pages docs: https://docs.github.com/pages
 - GitHub Actions docs: https://docs.github.com/actions
 - Vite deployment: https://vitejs.dev/guide/static-deploy
+
