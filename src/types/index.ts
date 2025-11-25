@@ -23,11 +23,33 @@ export interface ObjectCategory {
   items: ObjectType[];
 }
 
+export interface LotBoundary {
+  coordinates: Array<[number, number]>;
+  center: [number, number];
+}
+
+export interface LotInfo {
+  lotNumber: number;
+  boundary: LotBoundary;
+  clearing?: LotBoundary;
+}
+
 export interface TerrainData {
   image: string | null;
   heightMap: number[][] | null;
   width: number;
   height: number;
+  lots: LotInfo[];
+  selectedLotIndex: number | null;
+  kmzData: {
+    centerPoint: [number, number];
+    bounds: {
+      north: number;
+      south: number;
+      east: number;
+      west: number;
+    };
+  } | null;
 }
 
 export interface PropertyPhoto {

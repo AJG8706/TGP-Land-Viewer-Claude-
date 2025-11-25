@@ -4,6 +4,7 @@ import type { AppState, PlacedObject, ViewMode, TerrainData, PropertyPhoto } fro
 interface AppStore extends AppState {
   setViewMode: (mode: ViewMode) => void;
   setTerrainData: (data: TerrainData) => void;
+  setSelectedLot: (index: number | null) => void;
   addPlacedObject: (object: Omit<PlacedObject, 'id'>) => void;
   updatePlacedObject: (id: string, updates: Partial<PlacedObject>) => void;
   removePlacedObject: (id: string) => void;
@@ -19,6 +20,9 @@ export const useAppStore = create<AppStore>((set) => ({
     heightMap: null,
     width: 100,
     height: 100,
+    lots: [],
+    selectedLotIndex: null,
+    kmzData: null,
   },
   placedObjects: [],
   selectedObjectId: null,
@@ -27,6 +31,14 @@ export const useAppStore = create<AppStore>((set) => ({
   setViewMode: (mode) => set({ viewMode: mode }),
 
   setTerrainData: (data) => set({ terrainData: data }),
+
+  setSelectedLot: (index) =>
+    set((state) => ({
+      terrainData: {
+        ...state.terrainData,
+        selectedLotIndex: index,
+      },
+    })),
 
   addPlacedObject: (object) =>
     set((state) => ({
