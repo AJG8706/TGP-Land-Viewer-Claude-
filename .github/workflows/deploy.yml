@@ -63,11 +63,35 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Checkout gh-pages branch
+      - name: Check if gh-pages branch exists
+        id: check-branch
+        run: |
+          if git ls-remote --heads origin gh-pages | grep gh-pages; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Checkout gh-pages branch (if exists)
+        if: steps.check-branch.outputs.exists == 'true'
         uses: actions/checkout@v4
         with:
           ref: gh-pages
           path: gh-pages-dir
+
+      - name: Initialize gh-pages directory (if new)
+        if: steps.check-branch.outputs.exists == 'false'
+        run: |
+          mkdir gh-pages-dir
+          cd gh-pages-dir
+          git init
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git checkout -b gh-pages
+          echo "# TGP Land Viewer" > README.md
+          git add README.md
+          git commit -m "Initialize gh-pages"
+          git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
 
       - name: Deploy to gh-pages
         run: |
@@ -79,6 +103,7 @@ jobs:
 
           # Create/update index for previews
           if [[ "${{ github.ref }}" != "refs/heads/main" ]]; then
+            mkdir -p gh-pages-dir/preview
             cd gh-pages-dir/preview
             cat > index.html << 'HTMLEOF'
           <!DOCTYPE html>
