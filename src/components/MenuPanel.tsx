@@ -52,6 +52,9 @@ export function MenuPanel() {
           heightMap: null,
           width: 100,
           height: 100,
+          lots: [],
+          selectedLotIndex: null,
+          kmzData: null,
         });
       }
     };
