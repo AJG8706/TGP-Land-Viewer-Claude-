@@ -11,6 +11,8 @@ import {
   Math as CesiumMath,
   SceneMode,
   createWorldTerrainAsync,
+  Transforms,
+  HeadingPitchRoll,
 } from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import type { Viewer as CesiumViewerType } from 'cesium';
@@ -55,6 +57,8 @@ export function CesiumViewer() {
   const [kmlDataSource, setKmlDataSource] = useState<any>(null);
   const [expandedCategory, setExpandedCategory] = useState<string | null>('Residential');
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
+  const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
+  const [isDraggingEntity, setIsDraggingEntity] = useState(false);
 
   // Set initial camera view when viewer loads - MUCH closer zoom
   useEffect(() => {
@@ -82,6 +86,7 @@ export function CesiumViewer() {
     position: Cartesian3;
     name: string;
     type: ObjectType;
+    rotation: number; // rotation in degrees
   }>>([]);
 
   // Enable/disable terrain
@@ -105,6 +110,106 @@ export function CesiumViewer() {
     };
     loadTerrain();
   }, [terrainEnabled]);
+
+  // Handle entity selection and keyboard rotation
+  useEffect(() => {
+    if (!viewerRef.current) return;
+
+    const viewer = viewerRef.current;
+
+    // Click handler for entity selection
+    const handler = new (window as any).Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+
+    handler.setInputAction((click: any) => {
+      const pickedObject = viewer.scene.pick(click.position);
+      if (pickedObject && pickedObject.id && pickedObject.id.id) {
+        // Check if it's one of our entities
+        const entityId = pickedObject.id.id;
+        if (entities.find(e => e.id === entityId)) {
+          setSelectedEntityId(entityId);
+        }
+      } else {
+        setSelectedEntityId(null);
+      }
+    }, (window as any).Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+    // Keyboard handler for rotation
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!selectedEntityId) return;
+
+      if (e.key === 'r' || e.key === 'R') {
+        // Rotate clockwise
+        setEntities(prev => prev.map(entity =>
+          entity.id === selectedEntityId
+            ? { ...entity, rotation: (entity.rotation + 15) % 360 }
+            : entity
+        ));
+      } else if (e.key === 'e' || e.key === 'E') {
+        // Rotate counter-clockwise
+        setEntities(prev => prev.map(entity =>
+          entity.id === selectedEntityId
+            ? { ...entity, rotation: (entity.rotation - 15 + 360) % 360 }
+            : entity
+        ));
+      } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        // Delete selected entity
+        setEntities(prev => prev.filter(entity => entity.id !== selectedEntityId));
+        setSelectedEntityId(null);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      handler.destroy();
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedEntityId, entities]);
+
+  // Handle entity dragging
+  useEffect(() => {
+    if (!viewerRef.current || !selectedEntityId) return;
+
+    const viewer = viewerRef.current;
+    const handler = new (window as any).Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+
+    // Start dragging
+    handler.setInputAction((click: any) => {
+      const pickedObject = viewer.scene.pick(click.position);
+      if (pickedObject && pickedObject.id && pickedObject.id.id === selectedEntityId) {
+        setIsDraggingEntity(true);
+        viewer.scene.screenSpaceCameraController.enableRotate = false;
+      }
+    }, (window as any).Cesium.ScreenSpaceEventType.LEFT_DOWN);
+
+    // Drag entity
+    handler.setInputAction((movement: any) => {
+      if (isDraggingEntity && selectedEntityId) {
+        const cartesian = viewer.scene.camera.pickEllipsoid(
+          movement.endPosition,
+          viewer.scene.globe.ellipsoid
+        );
+
+        if (cartesian) {
+          setEntities(prev => prev.map(entity =>
+            entity.id === selectedEntityId
+              ? { ...entity, position: cartesian }
+              : entity
+          ));
+        }
+      }
+    }, (window as any).Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+
+    // Stop dragging
+    handler.setInputAction(() => {
+      setIsDraggingEntity(false);
+      viewer.scene.screenSpaceCameraController.enableRotate = true;
+    }, (window as any).Cesium.ScreenSpaceEventType.LEFT_UP);
+
+    return () => {
+      handler.destroy();
+    };
+  }, [selectedEntityId, isDraggingEntity, entities]);
 
   useEffect(() => {
     if (!viewerRef.current) return;
@@ -169,10 +274,10 @@ export function CesiumViewer() {
       await viewerRef.current.dataSources.add(dataSource);
       setKmlDataSource(dataSource);
 
-      // Fly to the loaded data with closer zoom - zoom in to fit all features
+      // Fly to the loaded data - zoom to fit all features comfortably
       await viewerRef.current.flyTo(dataSource, {
         duration: 2.0,
-        offset: new HeadingPitchRange(0, CesiumMath.toRadians(-90), 500), // Aerial view, 500m altitude
+        offset: new HeadingPitchRange(0, CesiumMath.toRadians(-90), 2000), // Aerial view, 2000m altitude
       });
 
       console.log('KML/KMZ loaded successfully');
@@ -217,6 +322,7 @@ export function CesiumViewer() {
         position,
         name: objectType,
         type: objectType,
+        rotation: 0,
       },
     ]);
 
@@ -249,29 +355,42 @@ export function CesiumViewer() {
         navigationInstructionsInitiallyVisible={false}
       >
         {/* Sample 3D entities (structures) */}
-        {entities.map((entity) => (
-          <Entity
-            key={entity.id}
-            name={entity.name}
-            position={entity.position}
-            box={{
-              dimensions: new Cartesian3(20, 20, 10),
-              material: Color.BLUE.withAlpha(0.7),
-              outline: true,
-              outlineColor: Color.BLACK,
-            }}
-          />
-        ))}
+        {entities.map((entity) => {
+          // Calculate rotation matrix
+          const heading = CesiumMath.toRadians(entity.rotation);
+          const pitch = 0;
+          const roll = 0;
+          const hpr = new HeadingPitchRoll(heading, pitch, roll);
+          const orientation = Transforms.headingPitchRollQuaternion(entity.position, hpr);
+
+          const isSelected = entity.id === selectedEntityId;
+
+          return (
+            <Entity
+              key={entity.id}
+              id={entity.id}
+              name={entity.name}
+              position={entity.position}
+              orientation={orientation}
+              box={{
+                dimensions: new Cartesian3(20, 20, 10),
+                material: isSelected ? Color.YELLOW.withAlpha(0.8) : Color.BLUE.withAlpha(0.7),
+                outline: true,
+                outlineColor: isSelected ? Color.YELLOW : Color.BLACK,
+              }}
+            />
+          );
+        })}
       </Viewer>
 
       {/* Compact Control Panel - Upper Left */}
-      <div className="absolute top-4 left-4 bg-gray-900/95 backdrop-blur text-white rounded-lg shadow-2xl border border-gray-700 z-10 max-w-sm">
+      <div className="absolute top-4 left-4 bg-white backdrop-blur rounded-lg shadow-2xl border border-gray-300 z-10 max-w-sm">
         {/* Header with collapse button */}
-        <div className="flex items-center justify-between p-3 border-b border-gray-700 bg-gray-800/50">
-          <h2 className="text-sm font-bold text-white">Controls</h2>
+        <div className="flex items-center justify-between p-3 border-b border-gray-300 bg-gray-100">
+          <h2 className="text-sm font-bold text-gray-900">Controls</h2>
           <button
             onClick={() => setIsPanelCollapsed(!isPanelCollapsed)}
-            className="text-gray-400 hover:text-white text-xs px-2 py-1 hover:bg-gray-700 rounded"
+            className="text-gray-600 hover:text-gray-900 text-xs px-2 py-1 hover:bg-gray-200 rounded"
           >
             {isPanelCollapsed ? 'Show' : 'Hide'}
           </button>
@@ -280,15 +399,15 @@ export function CesiumViewer() {
         {!isPanelCollapsed && (
           <div className="p-3 space-y-3 max-h-[80vh] overflow-y-auto">
             {/* KML/KMZ Upload */}
-            <div className="bg-gray-800/50 p-2 rounded border border-gray-700">
-              <label className="block text-xs font-semibold mb-1 text-gray-200">
+            <div className="bg-gray-50 p-2 rounded border border-gray-300">
+              <label className="block text-xs font-semibold mb-1 text-gray-900">
                 Upload KML/KMZ
               </label>
               <input
                 type="file"
                 accept=".kml,.kmz"
                 onChange={handleKMLUpload}
-                className="block w-full text-xs text-gray-300
+                className="block w-full text-xs text-gray-700
                   file:mr-2 file:py-1.5 file:px-3
                   file:rounded file:border-0
                   file:text-xs file:font-semibold
@@ -299,14 +418,14 @@ export function CesiumViewer() {
             </div>
 
             {/* Camera & Terrain Controls */}
-            <div className="bg-gray-800/50 p-2 rounded border border-gray-700 space-y-2">
+            <div className="bg-gray-50 p-2 rounded border border-gray-300 space-y-2">
               <div className="flex gap-2">
                 <button
                   onClick={() => setCameraMode('aerial')}
                   className={`flex-1 py-1.5 px-2 rounded text-xs font-medium ${
                     cameraMode === 'aerial'
                       ? 'bg-blue-600 text-white'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      : 'bg-gray-200 text-gray-900 hover:bg-gray-300'
                   }`}
                 >
                   Aerial
@@ -316,7 +435,7 @@ export function CesiumViewer() {
                   className={`flex-1 py-1.5 px-2 rounded text-xs font-medium ${
                     cameraMode === 'firstPerson'
                       ? 'bg-blue-600 text-white'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      : 'bg-gray-200 text-gray-900 hover:bg-gray-300'
                   }`}
                 >
                   First Person
@@ -329,29 +448,29 @@ export function CesiumViewer() {
                   onChange={(e) => setTerrainEnabled(e.target.checked)}
                   className="w-3 h-3"
                 />
-                <span className="text-xs text-gray-200">Topography</span>
+                <span className="text-xs text-gray-900">Topography</span>
               </label>
             </div>
 
             {/* Placeable Objects */}
-            <div className="bg-gray-800/50 p-2 rounded border border-gray-700">
-              <h3 className="text-xs font-semibold mb-2 text-gray-200">Drag & Drop Items</h3>
+            <div className="bg-gray-50 p-2 rounded border border-gray-300">
+              <h3 className="text-xs font-semibold mb-2 text-gray-900">Drag & Drop Items</h3>
               <div className="space-y-1">
                 {objectCategories.map((category) => {
                   const Icon = category.icon;
                   const isExpanded = expandedCategory === category.name;
 
                   return (
-                    <div key={category.name} className="border border-gray-600 rounded bg-gray-900/50">
+                    <div key={category.name} className="border border-gray-300 rounded bg-white">
                       <button
                         onClick={() => setExpandedCategory(isExpanded ? null : category.name)}
-                        className="w-full p-2 flex items-center justify-between hover:bg-gray-700/50 transition-colors rounded"
+                        className="w-full p-2 flex items-center justify-between hover:bg-gray-100 transition-colors rounded"
                       >
-                        <span className="flex items-center gap-1.5 text-xs font-medium text-gray-200">
+                        <span className="flex items-center gap-1.5 text-xs font-medium text-gray-900">
                           <Icon size={12} />
                           {category.name}
                         </span>
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-gray-600">
                           {isExpanded ? '−' : '+'}
                         </span>
                       </button>
@@ -363,7 +482,7 @@ export function CesiumViewer() {
                               key={item.type}
                               draggable
                               onDragStart={(e) => handleDragStart(e, item.type)}
-                              className="p-1.5 bg-gray-800 rounded text-xs cursor-move hover:bg-gray-700 transition-colors border border-gray-600 text-gray-200"
+                              className="p-1.5 bg-gray-100 rounded text-xs cursor-move hover:bg-gray-200 transition-colors border border-gray-300 text-gray-900"
                             >
                               {item.label}
                             </div>
@@ -374,9 +493,21 @@ export function CesiumViewer() {
                   );
                 })}
               </div>
-              <p className="text-xs text-gray-400 mt-2">
+              <p className="text-xs text-gray-600 mt-2">
                 Drag items onto the map to place
               </p>
+            </div>
+
+            {/* Controls Help */}
+            <div className="bg-blue-50 p-2 rounded border border-blue-300">
+              <h3 className="text-xs font-semibold mb-1 text-blue-900">Item Controls</h3>
+              <ul className="text-xs text-blue-800 space-y-0.5">
+                <li>• Click item to select (turns yellow)</li>
+                <li>• Drag selected item to move</li>
+                <li>• Press R to rotate clockwise</li>
+                <li>• Press E to rotate counter-clockwise</li>
+                <li>• Press Delete to remove</li>
+              </ul>
             </div>
           </div>
         )}
