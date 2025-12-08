@@ -2,7 +2,6 @@ import { useRef, useState, useEffect } from 'react';
 import {
   Viewer,
   Entity,
-  ImageryLayer,
 } from 'resium';
 import {
   Cartesian3,
@@ -25,9 +24,17 @@ export function CesiumViewer() {
   const [cameraMode, setCameraMode] = useState<'aerial' | 'firstPerson'>('aerial');
   const [kmlDataSource, setKmlDataSource] = useState<any>(null);
 
-  // Set initial camera view when viewer loads
+  // Set initial camera view and configure imagery when viewer loads
   useEffect(() => {
     if (viewerRef.current) {
+      // Use Cesium's built-in Natural Earth II imagery
+      const imageryProvider = new TileMapServiceImageryProvider({
+        url: buildModuleUrl('Assets/Textures/NaturalEarthII'),
+      });
+
+      viewerRef.current.scene.imageryLayers.removeAll();
+      viewerRef.current.scene.imageryLayers.addImageryProvider(imageryProvider);
+
       // Set camera to Texas view
       viewerRef.current.camera.setView({
         destination: Cartesian3.fromDegrees(-99.9018, 31.9686, 10000000),
@@ -49,9 +56,9 @@ export function CesiumViewer() {
 
   useEffect(() => {
     if (viewerRef.current && terrainEnabled) {
-      createWorldTerrainAsync().then((terrainProvider) => {
-        viewerRef.current!.scene.terrainProvider = terrainProvider;
-      });
+      // Terrain requires Cesium Ion, so we'll skip this for now
+      // You can enable this later with your own Cesium Ion token
+      console.log('World terrain disabled - requires Cesium Ion token');
     }
   }, [terrainEnabled]);
 
@@ -171,9 +178,6 @@ export function CesiumViewer() {
         selectionIndicator={true}
         navigationHelpButton={true}
         navigationInstructionsInitiallyVisible={false}
-        imageryProvider={new TileMapServiceImageryProvider({
-          url: buildModuleUrl('Assets/Textures/NaturalEarthII'),
-        })}
       >
         {/* Sample 3D entities (structures) */}
         {entities.map((entity) => (
