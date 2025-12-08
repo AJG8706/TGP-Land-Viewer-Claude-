@@ -7,6 +7,7 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
   const [properties, setProperties] = useState<Property[]>([]);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [activeTab, setActiveTab] = useState<'properties' | 'lots' | 'presets'>('properties');
+  const [saveMessage, setSaveMessage] = useState<string>('');
 
   // Load properties on mount
   useEffect(() => {
@@ -16,6 +17,22 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
   const loadProperties = () => {
     const allProperties = propertyStorage.getAllProperties();
     setProperties(allProperties);
+  };
+
+  const showSaveConfirmation = (message: string) => {
+    setSaveMessage(message);
+    setTimeout(() => setSaveMessage(''), 3000);
+  };
+
+  const resetAllData = () => {
+    if (confirm('⚠️ WARNING: This will delete ALL properties, lots, and presets.\n\nThis action cannot be undone.\n\nAre you sure?')) {
+      if (confirm('Are you REALLY sure? This will permanently delete everything.')) {
+        localStorage.clear();
+        setProperties([]);
+        setSelectedProperty(null);
+        showSaveConfirmation('✅ All data has been reset');
+      }
+    }
   };
 
   const createNewProperty = () => {
@@ -32,6 +49,7 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
     propertyStorage.saveProperty(newProperty);
     loadProperties();
     setSelectedProperty(newProperty);
+    showSaveConfirmation('✅ New property created');
   };
 
   const handleKMLUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,6 +67,7 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
       setSelectedProperty(updated);
       propertyStorage.saveProperty(updated);
       loadProperties();
+      showSaveConfirmation('✅ KML file uploaded');
     };
     reader.readAsDataURL(file);
   };
@@ -158,20 +177,33 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b bg-gray-800 text-white rounded-t-lg">
           <div className="flex items-center gap-3">
             <Settings size={24} />
             <h1 className="text-xl font-bold">Property Admin Console</h1>
+            {saveMessage && (
+              <span className="ml-4 px-3 py-1 bg-green-600 text-white text-sm rounded-full animate-pulse">
+                {saveMessage}
+              </span>
+            )}
           </div>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded text-sm font-medium"
-          >
-            Close Admin
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={resetAllData}
+              className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded text-sm font-medium"
+            >
+              Reset All Data
+            </button>
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded text-sm font-medium"
+            >
+              Close Admin
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-1 overflow-hidden">
@@ -255,6 +287,13 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
                 <div className="flex-1 overflow-y-auto p-6">
                   {activeTab === 'properties' && (
                     <div className="space-y-4">
+                      {/* Auto-save indicator */}
+                      <div className="bg-green-50 p-3 rounded border border-green-300">
+                        <p className="text-sm text-green-800">
+                          💾 <strong>Auto-save enabled:</strong> All changes are automatically saved
+                        </p>
+                      </div>
+
                       <div>
                         <label className="block text-sm font-medium mb-2">Property Name</label>
                         <input
@@ -265,6 +304,7 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
                             setSelectedProperty(updated);
                             propertyStorage.saveProperty(updated);
                             loadProperties();
+                            showSaveConfirmation('✅ Property name saved');
                           }}
                           className="w-full px-3 py-2 border rounded"
                         />

@@ -68,6 +68,7 @@ function App() {
           <div className="w-full h-full">
             <CesiumViewerSimple
               onSwitchToLotView={() => setViewerType('r3f')}
+              isAdminOpen={showAdmin}
             />
           </div>
         )}

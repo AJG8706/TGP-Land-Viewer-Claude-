@@ -18,9 +18,10 @@ Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIyMTJhY
 interface Props {
   onSwitchToLotView?: () => void;
   onLotSelected?: (lotId: string) => void;
+  isAdminOpen?: boolean;
 }
 
-export function CesiumViewerSimple({ onSwitchToLotView, onLotSelected }: Props) {
+export function CesiumViewerSimple({ onSwitchToLotView, onLotSelected, isAdminOpen }: Props) {
   const viewerRef = useRef<CesiumViewerType | null>(null);
   const [terrainEnabled, setTerrainEnabled] = useState(true);
   const [kmlDataSource, setKmlDataSource] = useState<any>(null);
@@ -189,11 +190,12 @@ export function CesiumViewerSimple({ onSwitchToLotView, onLotSelected }: Props) 
         navigationInstructionsInitiallyVisible={false}
       />
 
-      {/* Control Panel */}
-      <div className="absolute top-4 left-4 bg-white rounded-lg shadow-2xl border border-gray-300 z-10 max-w-sm">
-        <div className="flex items-center justify-between p-3 border-b border-gray-300 bg-gray-200">
-          <h2 className="text-sm font-bold text-gray-900">Lot Selection</h2>
-        </div>
+      {/* Control Panel - Hidden when admin is open */}
+      {!isAdminOpen && (
+        <div className="absolute top-4 left-4 bg-white rounded-lg shadow-2xl border border-gray-300 z-10 max-w-sm">
+          <div className="flex items-center justify-between p-3 border-b border-gray-300 bg-gray-200">
+            <h2 className="text-sm font-bold text-gray-900">Lot Selection</h2>
+          </div>
 
         <div className="p-3 space-y-3">
           {/* Property Info */}
@@ -278,7 +280,8 @@ export function CesiumViewerSimple({ onSwitchToLotView, onLotSelected }: Props) 
             </div>
           )}
         </div>
-      </div>
+        </div>
+      )}
 
       {/* Instructions Overlay */}
       {!kmlDataSource && (
