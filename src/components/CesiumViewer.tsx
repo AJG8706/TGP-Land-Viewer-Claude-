@@ -286,12 +286,12 @@ export function CesiumViewer({ onSwitchToR3F }: { onSwitchToR3F?: () => void }) 
       return;
     }
 
-    // Place entity slightly above ground (5 meters) to ensure visibility
+    // Place entity above ground to ensure visibility
     const cartographic = (window as any).Cesium.Cartographic.fromCartesian(cartesian);
     const positionAboveGround = (window as any).Cesium.Cartesian3.fromRadians(
       cartographic.longitude,
       cartographic.latitude,
-      5 // 5 meters above ground
+      10 // 10 meters above ground for better visibility
     );
 
     const newEntity = {
@@ -302,8 +302,18 @@ export function CesiumViewer({ onSwitchToR3F }: { onSwitchToR3F?: () => void }) 
       rotation: 0,
     };
 
-    console.log('Dropping entity:', newEntity);
+    console.log('✅ Dropped entity:', newEntity);
+    console.log('📍 Position:', {
+      lon: CesiumMath.toDegrees(cartographic.longitude),
+      lat: CesiumMath.toDegrees(cartographic.latitude),
+      height: 10
+    });
+    console.log('📦 Total entities:', entities.length + 1);
+
     setEntities([...entities, newEntity]);
+
+    // Visual confirmation
+    alert(`✅ Placed ${objectType}! Total items: ${entities.length + 1}\nClick it to select (turns yellow), then drag to move or press R/E to rotate.`);
   };
 
   return (
@@ -350,10 +360,11 @@ export function CesiumViewer({ onSwitchToR3F }: { onSwitchToR3F?: () => void }) 
               position={entity.position}
               orientation={orientation}
               box={{
-                dimensions: new Cartesian3(20, 20, 10),
-                material: isSelected ? Color.YELLOW.withAlpha(0.8) : Color.BLUE.withAlpha(0.7),
+                dimensions: new Cartesian3(50, 30, 15), // Much larger: 50m x 30m x 15m
+                material: isSelected ? Color.YELLOW.withAlpha(0.9) : Color.RED.withAlpha(0.9),
                 outline: true,
-                outlineColor: isSelected ? Color.YELLOW : Color.BLACK,
+                outlineColor: isSelected ? Color.YELLOW : Color.WHITE,
+                outlineWidth: 3,
               }}
             />
           );
@@ -400,7 +411,7 @@ export function CesiumViewer({ onSwitchToR3F }: { onSwitchToR3F?: () => void }) 
                 onClick={onSwitchToR3F}
                 className="w-full py-2 px-3 bg-purple-600 hover:bg-purple-700 text-white rounded text-xs font-medium"
               >
-                Switch to First Person View (R3F)
+                Switch to Lot View
               </button>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
