@@ -11,7 +11,6 @@ import {
   createWorldTerrainAsync,
   Math as CesiumMath,
   OpenStreetMapImageryProvider,
-  createOpenStreetMapImageryProvider,
 } from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import type { Viewer as CesiumViewerType } from 'cesium';
@@ -29,7 +28,7 @@ export function CesiumViewer() {
   useEffect(() => {
     if (viewerRef.current) {
       // Use OpenStreetMap imagery (free, no token needed)
-      const osmImagery = createOpenStreetMapImageryProvider({
+      const osmImagery = new OpenStreetMapImageryProvider({
         url: 'https://a.tile.openstreetmap.org/',
       });
 
