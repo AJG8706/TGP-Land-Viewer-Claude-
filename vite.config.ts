@@ -31,6 +31,10 @@ export default defineConfig({
   ],
   base: process.env.VITE_BASE_PATH || '/TGP-Land-Viewer-Claude-/',
   define: {
-    CESIUM_BASE_URL: JSON.stringify('/cesium'),
+    CESIUM_BASE_URL: JSON.stringify(
+      process.env.NODE_ENV === 'production'
+        ? '/TGP-Land-Viewer-Claude-/cesium'
+        : '/cesium'
+    ),
   },
 })
