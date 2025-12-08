@@ -10,13 +10,14 @@ import {
   Ion,
   createWorldTerrainAsync,
   Math as CesiumMath,
+  OpenStreetMapImageryProvider,
+  createOpenStreetMapImageryProvider,
 } from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import type { Viewer as CesiumViewerType } from 'cesium';
 
-// Set Cesium Ion token - using Cesium's default public token
-// For production, get your own free token at https://cesium.com/ion/signup
-Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI5N2UyMjcwOS00MDY1LTQxYjEtYjZjMy00YTU0ZTg1YmU0YTQiLCJpZCI6NDk2LCJpYXQiOjE2Mzk1Nzk5Mzl9.hLqwXbYYjUm9lIHQZqSU8kGJUcVPvl3pNfNqsXdJhx0';
+// Disable Cesium Ion - we'll use free OpenStreetMap imagery instead
+Ion.defaultAccessToken = '';
 
 export function CesiumViewer() {
   const viewerRef = useRef<CesiumViewerType | null>(null);
@@ -24,9 +25,17 @@ export function CesiumViewer() {
   const [cameraMode, setCameraMode] = useState<'aerial' | 'firstPerson'>('aerial');
   const [kmlDataSource, setKmlDataSource] = useState<any>(null);
 
-  // Set initial camera view when viewer loads
+  // Set initial camera view and configure imagery when viewer loads
   useEffect(() => {
     if (viewerRef.current) {
+      // Use OpenStreetMap imagery (free, no token needed)
+      const osmImagery = createOpenStreetMapImageryProvider({
+        url: 'https://a.tile.openstreetmap.org/',
+      });
+
+      viewerRef.current.scene.imageryLayers.removeAll();
+      viewerRef.current.scene.imageryLayers.addImageryProvider(osmImagery);
+
       // Set camera to Texas view with proper orientation
       viewerRef.current.camera.setView({
         destination: Cartesian3.fromDegrees(-99.9018, 31.9686, 10000000), // Texas at 10M meters to see Earth
@@ -162,7 +171,7 @@ export function CesiumViewer() {
         full
         timeline={false}
         animation={false}
-        baseLayerPicker={true}
+        baseLayerPicker={false}
         geocoder={false}
         homeButton={true}
         infoBox={true}
