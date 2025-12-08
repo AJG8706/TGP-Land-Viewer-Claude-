@@ -2,20 +2,21 @@ import { useRef, useState, useEffect } from 'react';
 import {
   Viewer,
   Entity,
+  ImageryLayer,
 } from 'resium';
 import {
   Cartesian3,
   Cartographic,
   Color,
   Ion,
-  createWorldTerrainAsync,
   Math as CesiumMath,
-  OpenStreetMapImageryProvider,
+  TileMapServiceImageryProvider,
+  buildModuleUrl,
 } from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import type { Viewer as CesiumViewerType } from 'cesium';
 
-// Disable Cesium Ion - we'll use free OpenStreetMap imagery instead
+// Disable Cesium Ion completely
 Ion.defaultAccessToken = '';
 
 export function CesiumViewer() {
@@ -24,23 +25,15 @@ export function CesiumViewer() {
   const [cameraMode, setCameraMode] = useState<'aerial' | 'firstPerson'>('aerial');
   const [kmlDataSource, setKmlDataSource] = useState<any>(null);
 
-  // Set initial camera view and configure imagery when viewer loads
+  // Set initial camera view when viewer loads
   useEffect(() => {
     if (viewerRef.current) {
-      // Use OpenStreetMap imagery (free, no token needed)
-      const osmImagery = new OpenStreetMapImageryProvider({
-        url: 'https://a.tile.openstreetmap.org/',
-      });
-
-      viewerRef.current.scene.imageryLayers.removeAll();
-      viewerRef.current.scene.imageryLayers.addImageryProvider(osmImagery);
-
-      // Set camera to Texas view with proper orientation
+      // Set camera to Texas view
       viewerRef.current.camera.setView({
-        destination: Cartesian3.fromDegrees(-99.9018, 31.9686, 10000000), // Texas at 10M meters to see Earth
+        destination: Cartesian3.fromDegrees(-99.9018, 31.9686, 10000000),
         orientation: {
           heading: 0.0,
-          pitch: CesiumMath.toRadians(-90), // Look straight down
+          pitch: CesiumMath.toRadians(-90),
           roll: 0.0,
         },
       });
@@ -178,6 +171,9 @@ export function CesiumViewer() {
         selectionIndicator={true}
         navigationHelpButton={true}
         navigationInstructionsInitiallyVisible={false}
+        imageryProvider={new TileMapServiceImageryProvider({
+          url: buildModuleUrl('Assets/Textures/NaturalEarthII'),
+        })}
       >
         {/* Sample 3D entities (structures) */}
         {entities.map((entity) => (
