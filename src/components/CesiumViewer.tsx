@@ -14,8 +14,9 @@ import {
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import type { Viewer as CesiumViewerType } from 'cesium';
 
-// Set your Cesium Ion token (you can use the default for testing)
-Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJlYWE1OWUxNy1mMWZiLTQzYjYtYTQ0OS1kMWFjYmFkNjc5YzciLCJpZCI6NTc3MzMsImlhdCI6MTYyNzg0NTE4Mn0.XcKpgANiY19MC4bdFUXMVEBToBmqS8kuYpUlxJHYZxk';
+// Set Cesium Ion token - using Cesium's default public token
+// For production, get your own free token at https://cesium.com/ion/signup
+Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI5N2UyMjcwOS00MDY1LTQxYjEtYjZjMy00YTU0ZTg1YmU0YTQiLCJpZCI6NDk2LCJpYXQiOjE2Mzk1Nzk5Mzl9.hLqwXbYYjUm9lIHQZqSU8kGJUcVPvl3pNfNqsXdJhx0';
 
 export function CesiumViewer() {
   const viewerRef = useRef<CesiumViewerType | null>(null);
@@ -233,7 +234,7 @@ export function CesiumViewer() {
         {/* KML/KMZ Upload */}
         <div>
           <label className="block text-sm font-semibold mb-2">
-            Load KML/KMZ from Google Maps
+            Load KML/KMZ File
           </label>
           <input
             type="file"
@@ -247,6 +248,9 @@ export function CesiumViewer() {
               hover:file:bg-green-700
               file:cursor-pointer cursor-pointer"
           />
+          <p className="text-xs text-gray-400 mt-1">
+            From Google Maps: Menu → Share → Export to KML → Download file
+          </p>
         </div>
 
         {/* Add Structure */}
