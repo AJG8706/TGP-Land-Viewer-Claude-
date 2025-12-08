@@ -3,7 +3,6 @@ import {
   Viewer,
   CameraFlyTo,
   Entity,
-  KmlDataSource,
 } from 'resium';
 import {
   Cartesian3,
@@ -23,8 +22,9 @@ export function CesiumViewer() {
   const viewerRef = useRef<CesiumViewerType | null>(null);
   const [terrainEnabled, setTerrainEnabled] = useState(false);
   const [cameraMode, setCameraMode] = useState<'aerial' | 'firstPerson'>('aerial');
-  const [position] = useState(Cartesian3.fromDegrees(-98.5795, 39.8283, 1000)); // Center of USA
+  const [position] = useState(Cartesian3.fromDegrees(-99.9018, 31.9686, 2000000)); // Texas, higher altitude to see Earth
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [kmlDataSource, setKmlDataSource] = useState<any>(null);
 
   // Sample 3D entities (replace with your actual structures)
   const [entities, setEntities] = useState<Array<{
@@ -84,10 +84,34 @@ export function CesiumViewer() {
 
   const handleKMLUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file || !viewerRef.current) return;
 
-    const url = URL.createObjectURL(file);
-    setSelectedFile(url);
+    try {
+      // Load KML/KMZ file using Cesium's native loader
+      const { KmlDataSource } = await import('cesium');
+      const dataSource = await KmlDataSource.load(file, {
+        camera: viewerRef.current.camera,
+        canvas: viewerRef.current.canvas,
+        clampToGround: true,
+      });
+
+      // Remove previous data source if exists
+      if (kmlDataSource) {
+        viewerRef.current.dataSources.remove(kmlDataSource);
+      }
+
+      // Add new data source
+      await viewerRef.current.dataSources.add(dataSource);
+      setKmlDataSource(dataSource);
+
+      // Fly to the loaded data
+      await viewerRef.current.flyTo(dataSource);
+
+      console.log('KML/KMZ loaded successfully');
+    } catch (error) {
+      console.error('KML load error:', error);
+      alert(`Failed to load KML/KMZ file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   };
 
   const handleAddStructure = () => {
@@ -134,25 +158,6 @@ export function CesiumViewer() {
         navigationHelpButton={true}
         navigationInstructionsInitiallyVisible={false}
       >
-        {/* Load KML/KMZ file */}
-        {selectedFile && (
-          <KmlDataSource
-            data={selectedFile}
-            clampToGround={true}
-            onLoad={(kmlDataSource) => {
-              console.log('KML loaded');
-              // Fly to the data
-              if (viewerRef.current) {
-                viewerRef.current.flyTo(kmlDataSource);
-              }
-            }}
-            onError={(error) => {
-              console.error('KML load error:', error);
-              alert('Failed to load KML/KMZ file');
-            }}
-          />
-        )}
-
         {/* Sample 3D entities (structures) */}
         {entities.map((entity) => (
           <Entity
