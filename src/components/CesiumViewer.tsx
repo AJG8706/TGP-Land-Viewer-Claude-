@@ -23,7 +23,6 @@ export function CesiumViewer() {
   const [terrainEnabled, setTerrainEnabled] = useState(false);
   const [cameraMode, setCameraMode] = useState<'aerial' | 'firstPerson'>('aerial');
   const [position] = useState(Cartesian3.fromDegrees(-99.9018, 31.9686, 2000000)); // Texas, higher altitude to see Earth
-  const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [kmlDataSource, setKmlDataSource] = useState<any>(null);
 
   // Sample 3D entities (replace with your actual structures)
