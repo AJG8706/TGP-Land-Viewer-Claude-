@@ -52,7 +52,7 @@ function App() {
         ) : (
           /* Cesium Viewer - Full Width */
           <div className="w-full h-full">
-            <CesiumViewer />
+            <CesiumViewer onSwitchToR3F={() => setViewerType('r3f')} />
           </div>
         )}
       </div>

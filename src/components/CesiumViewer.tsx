@@ -49,10 +49,9 @@ const objectCategories = [
   },
 ];
 
-export function CesiumViewer() {
+export function CesiumViewer({ onSwitchToR3F }: { onSwitchToR3F?: () => void }) {
   const viewerRef = useRef<CesiumViewerType | null>(null);
   const [terrainEnabled, setTerrainEnabled] = useState(true); // Enable terrain by default
-  const [cameraMode, setCameraMode] = useState<'aerial' | 'firstPerson'>('aerial');
   const [kmlDataSource, setKmlDataSource] = useState<any>(null);
   const [expandedCategory, setExpandedCategory] = useState<string | null>('Residential');
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
@@ -210,47 +209,6 @@ export function CesiumViewer() {
     };
   }, [selectedEntityId, isDraggingEntity, entities]);
 
-  useEffect(() => {
-    if (!viewerRef.current) return;
-
-    const viewer = viewerRef.current;
-    const scene = viewer.scene;
-    const camera = viewer.camera;
-
-    if (cameraMode === 'firstPerson') {
-      // First-person controls
-      scene.screenSpaceCameraController.enableRotate = true;
-      scene.screenSpaceCameraController.enableTranslate = true;
-      scene.screenSpaceCameraController.enableZoom = true;
-      scene.screenSpaceCameraController.enableTilt = true;
-      scene.screenSpaceCameraController.enableLook = true;
-
-      // Set camera to ground level
-      const currentPos = camera.positionCartographic;
-      camera.position = Cartesian3.fromRadians(
-        currentPos.longitude,
-        currentPos.latitude,
-        currentPos.height < 100 ? 100 : currentPos.height
-      );
-
-      // Look straight ahead
-      camera.setView({
-        orientation: {
-          heading: camera.heading,
-          pitch: CesiumMath.toRadians(-10),
-          roll: 0.0,
-        },
-      });
-    } else {
-      // Aerial view controls
-      scene.screenSpaceCameraController.enableRotate = true;
-      scene.screenSpaceCameraController.enableTranslate = true;
-      scene.screenSpaceCameraController.enableZoom = true;
-      scene.screenSpaceCameraController.enableTilt = true;
-      scene.screenSpaceCameraController.enableLook = false;
-    }
-  }, [cameraMode]);
-
   const handleKMLUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !viewerRef.current) return;
@@ -311,24 +269,41 @@ export function CesiumViewer() {
     const position2D = new (window as any).Cesium.Cartesian2(x, y);
 
     // Pick the position on the globe/ellipsoid
-    const cartesian = viewer.scene.camera.pickEllipsoid(position2D, viewer.scene.globe.ellipsoid);
+    let cartesian = viewer.scene.camera.pickEllipsoid(position2D, viewer.scene.globe.ellipsoid);
 
     if (!cartesian) {
-      console.warn('Could not pick position on globe');
+      console.warn('Could not pick position on globe, trying scene pick');
+      // Try alternative picking method
+      const pickRay = viewer.camera.getPickRay(position2D);
+      if (pickRay) {
+        cartesian = viewer.scene.globe.pick(pickRay, viewer.scene);
+      }
+    }
+
+    if (!cartesian) {
+      console.error('Could not determine drop position');
+      alert('Could not place item at this location. Try dropping on the map area.');
       return;
     }
 
-    // Add entity at the clicked location
-    setEntities([
-      ...entities,
-      {
-        id: `${objectType}-${entities.length}`,
-        position: cartesian,
-        name: objectType,
-        type: objectType,
-        rotation: 0,
-      },
-    ]);
+    // Place entity slightly above ground (5 meters) to ensure visibility
+    const cartographic = (window as any).Cesium.Cartographic.fromCartesian(cartesian);
+    const positionAboveGround = (window as any).Cesium.Cartesian3.fromRadians(
+      cartographic.longitude,
+      cartographic.latitude,
+      5 // 5 meters above ground
+    );
+
+    const newEntity = {
+      id: `${objectType}-${Date.now()}-${entities.length}`,
+      position: positionAboveGround,
+      name: objectType,
+      type: objectType,
+      rotation: 0,
+    };
+
+    console.log('Dropping entity:', newEntity);
+    setEntities([...entities, newEntity]);
   };
 
   return (
@@ -386,13 +361,13 @@ export function CesiumViewer() {
       </Viewer>
 
       {/* Compact Control Panel - Upper Left */}
-      <div className="absolute top-4 left-4 bg-white backdrop-blur rounded-lg shadow-2xl border border-gray-300 z-10 max-w-sm">
+      <div className="absolute top-4 left-4 bg-white rounded-lg shadow-2xl border border-gray-300 z-10 max-w-sm">
         {/* Header with collapse button */}
-        <div className="flex items-center justify-between p-3 border-b border-gray-300 bg-gray-100">
+        <div className="flex items-center justify-between p-3 border-b border-gray-300 bg-gray-200">
           <h2 className="text-sm font-bold text-gray-900">Controls</h2>
           <button
             onClick={() => setIsPanelCollapsed(!isPanelCollapsed)}
-            className="text-gray-600 hover:text-gray-900 text-xs px-2 py-1 hover:bg-gray-200 rounded"
+            className="text-gray-600 hover:text-gray-900 text-xs px-2 py-1 hover:bg-gray-300 rounded"
           >
             {isPanelCollapsed ? 'Show' : 'Hide'}
           </button>
@@ -419,30 +394,14 @@ export function CesiumViewer() {
               />
             </div>
 
-            {/* Camera & Terrain Controls */}
+            {/* View & Terrain Controls */}
             <div className="bg-gray-50 p-2 rounded border border-gray-300 space-y-2">
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setCameraMode('aerial')}
-                  className={`flex-1 py-1.5 px-2 rounded text-xs font-medium ${
-                    cameraMode === 'aerial'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-200 text-gray-900 hover:bg-gray-300'
-                  }`}
-                >
-                  Aerial
-                </button>
-                <button
-                  onClick={() => setCameraMode('firstPerson')}
-                  className={`flex-1 py-1.5 px-2 rounded text-xs font-medium ${
-                    cameraMode === 'firstPerson'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-200 text-gray-900 hover:bg-gray-300'
-                  }`}
-                >
-                  First Person
-                </button>
-              </div>
+              <button
+                onClick={onSwitchToR3F}
+                className="w-full py-2 px-3 bg-purple-600 hover:bg-purple-700 text-white rounded text-xs font-medium"
+              >
+                Switch to First Person View (R3F)
+              </button>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -450,7 +409,7 @@ export function CesiumViewer() {
                   onChange={(e) => setTerrainEnabled(e.target.checked)}
                   className="w-3 h-3"
                 />
-                <span className="text-xs text-gray-900">Topography</span>
+                <span className="text-xs text-gray-900">Enable Topography</span>
               </label>
             </div>
 
