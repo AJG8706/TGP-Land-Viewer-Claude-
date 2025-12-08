@@ -5,7 +5,6 @@ import {
 } from 'resium';
 import {
   Cartesian3,
-  Cartographic,
   Color,
   Ion,
   Math as CesiumMath,
@@ -277,7 +276,7 @@ export function CesiumViewer() {
       // Fly to the loaded data - zoom to fit all features comfortably
       await viewerRef.current.flyTo(dataSource, {
         duration: 2.0,
-        offset: new HeadingPitchRange(0, CesiumMath.toRadians(-90), 2000), // Aerial view, 2000m altitude
+        offset: new HeadingPitchRange(0, CesiumMath.toRadians(-90), 3500), // Aerial view, 3500m altitude
       });
 
       console.log('KML/KMZ loaded successfully');
@@ -297,36 +296,39 @@ export function CesiumViewer() {
     const objectType = event.dataTransfer.getData('objectType') as ObjectType;
     if (!objectType) return;
 
-    // Get the clicked position on the globe
-    const viewer = viewerRef.current;
-    const scene = viewer.scene;
-    const cartesian = scene.camera.pickEllipsoid(
-      new Cartesian3(event.clientX, event.clientY),
-      scene.globe.ellipsoid
-    );
+    event.preventDefault();
 
-    if (!cartesian) return;
+    // Get the drop position on the globe
+    const viewer = viewerRef.current;
+    const canvas = viewer.scene.canvas;
+
+    // Get canvas-relative coordinates
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    // Convert to Cesium Cartesian2
+    const position2D = new (window as any).Cesium.Cartesian2(x, y);
+
+    // Pick the position on the globe/ellipsoid
+    const cartesian = viewer.scene.camera.pickEllipsoid(position2D, viewer.scene.globe.ellipsoid);
+
+    if (!cartesian) {
+      console.warn('Could not pick position on globe');
+      return;
+    }
 
     // Add entity at the clicked location
-    const cartographic = Cartographic.fromCartesian(cartesian);
-    const position = Cartesian3.fromRadians(
-      cartographic.longitude,
-      cartographic.latitude,
-      0
-    );
-
     setEntities([
       ...entities,
       {
         id: `${objectType}-${entities.length}`,
-        position,
+        position: cartesian,
         name: objectType,
         type: objectType,
         rotation: 0,
       },
     ]);
-
-    event.preventDefault();
   };
 
   return (
