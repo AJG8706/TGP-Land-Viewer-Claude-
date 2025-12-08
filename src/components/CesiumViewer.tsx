@@ -13,8 +13,8 @@ import {
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import type { Viewer as CesiumViewerType } from 'cesium';
 
-// Disable Cesium Ion completely
-Ion.defaultAccessToken = '';
+// Cesium Ion access token for imagery and terrain
+Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIyMTJhYTk4MC03NWY3LTRkOWQtYjE3NS04NDEyYWM4NTE0MDgiLCJpZCI6MzY3NzgxLCJpYXQiOjE3NjUyMjUzODF9.2iaopscVk321BPc3HkHexuZdXj0X2jWifY7do4bzJ_I';
 
 export function CesiumViewer() {
   const viewerRef = useRef<CesiumViewerType | null>(null);
