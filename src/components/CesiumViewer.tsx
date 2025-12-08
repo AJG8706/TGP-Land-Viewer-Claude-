@@ -9,8 +9,6 @@ import {
   Color,
   Ion,
   Math as CesiumMath,
-  TileMapServiceImageryProvider,
-  buildModuleUrl,
 } from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import type { Viewer as CesiumViewerType } from 'cesium';
@@ -24,18 +22,10 @@ export function CesiumViewer() {
   const [cameraMode, setCameraMode] = useState<'aerial' | 'firstPerson'>('aerial');
   const [kmlDataSource, setKmlDataSource] = useState<any>(null);
 
-  // Set initial camera view and configure imagery when viewer loads
+  // Set initial camera view when viewer loads
   useEffect(() => {
     if (viewerRef.current) {
-      // Use Cesium's built-in Natural Earth II imagery
-      const imageryProvider = new TileMapServiceImageryProvider({
-        url: buildModuleUrl('Assets/Textures/NaturalEarthII'),
-      });
-
-      viewerRef.current.scene.imageryLayers.removeAll();
-      viewerRef.current.scene.imageryLayers.addImageryProvider(imageryProvider);
-
-      // Set camera to Texas view
+      // Set camera to Texas view - Earth should be visible by default
       viewerRef.current.camera.setView({
         destination: Cartesian3.fromDegrees(-99.9018, 31.9686, 10000000),
         orientation: {
