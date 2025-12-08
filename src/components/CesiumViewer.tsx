@@ -1,7 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import {
   Viewer,
-  CameraFlyTo,
   Entity,
 } from 'resium';
 import {
@@ -22,8 +21,22 @@ export function CesiumViewer() {
   const viewerRef = useRef<CesiumViewerType | null>(null);
   const [terrainEnabled, setTerrainEnabled] = useState(false);
   const [cameraMode, setCameraMode] = useState<'aerial' | 'firstPerson'>('aerial');
-  const [position] = useState(Cartesian3.fromDegrees(-99.9018, 31.9686, 2000000)); // Texas, higher altitude to see Earth
   const [kmlDataSource, setKmlDataSource] = useState<any>(null);
+
+  // Set initial camera view when viewer loads
+  useEffect(() => {
+    if (viewerRef.current) {
+      // Set camera to Texas view with proper orientation
+      viewerRef.current.camera.setView({
+        destination: Cartesian3.fromDegrees(-99.9018, 31.9686, 10000000), // Texas at 10M meters to see Earth
+        orientation: {
+          heading: 0.0,
+          pitch: CesiumMath.toRadians(-90), // Look straight down
+          roll: 0.0,
+        },
+      });
+    }
+  }, []);
 
   // Sample 3D entities (replace with your actual structures)
   const [entities, setEntities] = useState<Array<{
@@ -171,12 +184,6 @@ export function CesiumViewer() {
             }}
           />
         ))}
-
-        {/* Camera position */}
-        <CameraFlyTo
-          destination={position}
-          duration={2}
-        />
       </Viewer>
 
       {/* Control Panel Overlay */}
