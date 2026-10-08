@@ -1,0 +1,64 @@
+{
+  "plan": {
+    "id": "beaumont-broussard/a",
+    "display_name": "Beaumont Broussard Rd - cleared woods",
+    "inputs": [
+      "input/beaumont-broussard/20240712_095617.jpg"
+    ]
+  },
+  "model": "marble-1.1",
+  "operation_id": "d9326b6b-486b-4248-9f07-befa40d02c11",
+  "cost": {
+    "total_credits": 1580,
+    "line_items": [
+      {
+        "name": "Pano generation (image, non-pano)",
+        "credits": 80
+      },
+      {
+        "name": "World generation",
+        "credits": 1500
+      }
+    ]
+  },
+  "world": {
+    "world_id": "132abf6f-f87c-48ac-9dd5-ccad6c21a355",
+    "display_name": "",
+    "tags": null,
+    "assets": {
+      "mesh": {
+        "collider_mesh_url": "https://cdn.marble.worldlabs.ai/132abf6f-f87c-48ac-9dd5-ccad6c21a355/78594c50.glb",
+        "hq_mesh_url": null,
+        "full_res_mesh_url": null
+      },
+      "imagery": {
+        "pano_url": "https://cdn.marble.worldlabs.ai/132abf6f-f87c-48ac-9dd5-ccad6c21a355/372c1d2d-6249-4eec-953d-248307aa6dbe_panos/rgb_0.png"
+      },
+      "splats": {
+        "spz_urls": {
+          "500k": "https://cdn.marble.worldlabs.ai/132abf6f-f87c-48ac-9dd5-ccad6c21a355/b8624dda-23ea-4385-9eac-d5c71d74c1ea_ceramic_500k.spz",
+          "100k": "https://cdn.marble.worldlabs.ai/132abf6f-f87c-48ac-9dd5-ccad6c21a355/da32a18b-6275-435c-9124-869f030adab5_dust_100k.spz",
+          "150k": "https://cdn.marble.worldlabs.ai/132abf6f-f87c-48ac-9dd5-ccad6c21a355/c12acd87-6d70-4c8e-9a9d-a5cf4df93db7_ceramic_150k.spz",
+          "full_res": "https://cdn.marble.worldlabs.ai/132abf6f-f87c-48ac-9dd5-ccad6c21a355/5b558c75-3140-496c-8da4-5a26937874a1_ceramic.spz"
+        },
+        "semantics_metadata": {
+          "metric_scale_factor": 2.0011964,
+          "ground_plane_offset": 1.013878
+        }
+      },
+      "thumbnail_url": "https://cdn.marble.worldlabs.ai/132abf6f-f87c-48ac-9dd5-ccad6c21a355/4df36af4-fa49-4723-bc1f-48a374f52285_sand_mpi/thumbnail.webp",
+      "caption": "The scene is a dense forest, captured in a realistic style, showcasing a serene and untouched natural environment. The overall tone is peaceful and verdant, with an abundance of natural elements. The forest floor is covered with a thick layer of dry leaves, twigs, and fallen debris, creating a textured carpet of browns and muted greens. Numerous trees of varying girth and height populate the area, their trunks rising vertically towards the canopy; some trees feature lighter, smoother bark while others exhibit darker, rougher textures with patches of moss. Slender vines hang loosely between some of the trees, swaying gently, adding to the wild and untamed character of the woodland. The foliage above is dense, forming a continuous green canopy that filters the light, creating dappled shadows on the ground. Patches of lighter soil or exposed roots are visible beneath the leaf litter, indicating the unevenness of the terrain. The trees are spaced irregularly, creating natural pathways and clearings within the dense growth. The 360 scene is faultless."
+    },
+    "created_at": null,
+    "updated_at": null,
+    "permission": {
+      "public": false,
+      "allowed_readers": [],
+      "allowed_writers": [],
+      "allow_id_access": false
+    },
+    "world_prompt": null,
+    "world_marble_url": "https://marble.worldlabs.ai/world/132abf6f-f87c-48ac-9dd5-ccad6c21a355",
+    "model": null
+  }
+}

@@ -10,7 +10,7 @@
 // worlds/<lot>/<variant>/ as world.json plus its splats, pano and thumbnail.
 // Meshes are never downloaded and the paid HQ mesh export is never requested.
 
-import { readFile, writeFile, mkdir, access } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, access, unlink } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -153,9 +153,16 @@ async function estimate() {
   for (const world of plan.worlds) {
     const credits = priceOf(world, plan.model);
     const done = await exists(path.join(ROOT, 'worlds', world.id, 'world.json'));
+    const paid = !done && (await exists(path.join(ROOT, 'worlds', world.id, 'operation.json')));
     const { problems, sizes } = await checkInputs(world);
-    const status = done ? 'already generated' : problems.length ? problems.join('; ') : 'ready';
-    if (!done) total += credits;
+    const status = done
+      ? 'already generated'
+      : paid
+        ? 'paid for; run again to finish downloading (no new charge)'
+        : problems.length
+          ? problems.join('; ')
+          : 'ready';
+    if (!done && !paid) total += credits;
     console.log(`${world.id.padEnd(22)} ${String(world.inputs.length).padStart(2)} image(s) ${String(credits).padStart(5)} credits  ${status}`);
     if (sizes.length) console.log(`${''.padEnd(22)} ${[...new Set(sizes)].join(', ')}`);
   }
@@ -213,7 +220,9 @@ async function waitFor(operationId) {
 }
 
 async function download(url, file) {
-  const res = await fetch(url);
+  const res = await fetch(url).catch((err) => {
+    throw new Error(`Download from ${new URL(url).host} failed: ${err.cause?.message ?? err.message}`);
+  });
   if (!res.ok) throw new Error(`Download of ${url} failed: ${res.status}`);
   await writeFile(file, Buffer.from(await res.arrayBuffer()));
 }
@@ -228,29 +237,41 @@ async function run(id) {
   if (!world) throw new Error(`No world ${id} in worlds/plan.json.`);
   const outDir = path.join(ROOT, 'worlds', id);
   if (await exists(path.join(outDir, 'world.json'))) throw new Error(`${id} is already generated.`);
+  // Written as soon as a generation is paid for, so a run that dies while
+  // waiting or downloading resumes that operation instead of paying again.
+  const operationFile = path.join(outDir, 'operation.json');
 
-  const { problems } = await checkInputs(world);
-  if (problems.length) throw new Error(`${id}: ${problems.join('; ')}`);
-  const credits = priceOf(world, plan.model);
-  // The API admits requests that overdraw the balance and bills the overage later.
-  const available = await balance();
-  if (available < credits) throw new Error(`Balance ${available} is below the ${credits} credits ${id} costs.`);
+  let operationId;
+  if (await exists(operationFile)) {
+    ({ operation_id: operationId } = JSON.parse(await readFile(operationFile, 'utf8')));
+    console.log(`Resuming operation ${operationId} (no new charge).`);
+  } else {
+    const { problems } = await checkInputs(world);
+    if (problems.length) throw new Error(`${id}: ${problems.join('; ')}`);
+    const credits = priceOf(world, plan.model);
+    // The API admits requests that overdraw the balance and bills the overage later.
+    const available = await balance();
+    if (available < credits) throw new Error(`Balance ${available} is below the ${credits} credits ${id} costs.`);
 
-  console.log(`Uploading ${world.inputs.length} image(s) for ${id}...`);
-  const assetIds = [];
-  for (const rel of world.inputs) assetIds.push(await upload(rel));
+    console.log(`Uploading ${world.inputs.length} image(s) for ${id}...`);
+    const assetIds = [];
+    for (const rel of world.inputs) assetIds.push(await upload(rel));
 
-  const started = await api('POST', '/worlds:generate', {
-    display_name: world.display_name,
-    model: plan.model,
-    world_prompt: worldPrompt(assetIds),
-    tags: ['tgp', id.split('/')[0]],
-  });
-  console.log(`Started operation ${started.operation_id}.`);
-  const op = await waitFor(started.operation_id);
+    const started = await api('POST', '/worlds:generate', {
+      display_name: world.display_name,
+      model: plan.model,
+      world_prompt: worldPrompt(assetIds),
+      tags: ['tgp', id.split('/')[0]],
+    });
+    operationId = started.operation_id;
+    await mkdir(outDir, { recursive: true });
+    await writeFile(operationFile, JSON.stringify({ operation_id: operationId }, null, 2) + '\n');
+    console.log(`Started operation ${operationId}.`);
+  }
+  const op = await waitFor(operationId);
   const result = op.response;
+  console.log(`Generated. Marble viewer: ${result.world_marble_url}`);
 
-  await mkdir(outDir, { recursive: true });
   const assets = result.assets ?? {};
   if (assets.thumbnail_url) await download(assets.thumbnail_url, path.join(outDir, `thumbnail${extOf(assets.thumbnail_url, '.webp')}`));
   if (assets.imagery?.pano_url) await download(assets.imagery.pano_url, path.join(outDir, `pano${extOf(assets.imagery.pano_url, '.png')}`));
@@ -259,8 +280,9 @@ async function run(id) {
   }
   await writeFile(
     path.join(outDir, 'world.json'),
-    JSON.stringify({ plan: world, model: plan.model, operation_id: started.operation_id, cost: op.cost, world: result }, null, 2) + '\n',
+    JSON.stringify({ plan: world, model: plan.model, operation_id: operationId, cost: op.cost, world: result }, null, 2) + '\n',
   );
+  await unlink(operationFile);
 
   console.log(`\n${id} done. Cost: ${op.cost?.total_credits ?? 'not reported'} credits.`);
   console.log(`Marble viewer: ${result.world_marble_url}`);
