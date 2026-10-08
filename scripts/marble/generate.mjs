@@ -11,8 +11,20 @@
 // Meshes are never downloaded and the paid HQ mesh export is never requested.
 
 import { readFile, writeFile, mkdir, access } from 'node:fs/promises';
+import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+// Node's fetch ignores HTTPS_PROXY unless NODE_USE_ENV_PROXY is set, and in a
+// cloud session the proxy is what adds the API key, so rerun with it set.
+if ((process.env.HTTPS_PROXY || process.env.https_proxy) && !process.env.NODE_USE_ENV_PROXY) {
+  const { status } = spawnSync(
+    process.execPath,
+    ['--disable-warning=UNDICI-EHPA', ...process.argv.slice(1)],
+    { stdio: 'inherit', env: { ...process.env, NODE_USE_ENV_PROXY: '1' } },
+  );
+  process.exit(status ?? 1);
+}
 
 const API = `${process.env.WORLDLABS_API_ORIGIN || 'https://api.worldlabs.ai'}/marble/v1`;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
