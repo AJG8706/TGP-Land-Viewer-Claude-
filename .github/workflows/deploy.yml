@@ -5,6 +5,11 @@ on:
     branches:
       - main
       - 'claude/**'
+    # Photo uploads and generated Marble worlds don't change the site.
+    paths-ignore:
+      - 'input/**'
+      - 'worlds/**'
+      - 'scripts/marble/**'
 
 permissions:
   contents: read
