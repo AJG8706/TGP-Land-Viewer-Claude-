@@ -1,0 +1,66 @@
+{
+  "plan": {
+    "id": "beaumont-broussard/b",
+    "display_name": "Beaumont Broussard Rd - woods toward the road",
+    "inputs": [
+      "input/beaumont-broussard/20240712_095656.jpg",
+      "input/beaumont-broussard/20240712_095659.jpg",
+      "input/beaumont-broussard/20240712_095702.jpg"
+    ]
+  },
+  "model": "marble-1.1",
+  "operation_id": "ac78023c-2303-4809-8df6-590e8ab0883c",
+  "cost": {
+    "total_credits": 1600,
+    "line_items": [
+      {
+        "name": "Pano generation (multi-image)",
+        "credits": 100
+      },
+      {
+        "name": "World generation",
+        "credits": 1500
+      }
+    ]
+  },
+  "world": {
+    "world_id": "664f98ac-666d-4a38-b73d-47e0e0ed5b29",
+    "display_name": "",
+    "tags": null,
+    "assets": {
+      "mesh": {
+        "collider_mesh_url": "https://cdn.marble.worldlabs.ai/664f98ac-666d-4a38-b73d-47e0e0ed5b29/24e3cf1c.glb",
+        "hq_mesh_url": null,
+        "full_res_mesh_url": null
+      },
+      "imagery": {
+        "pano_url": "https://cdn.marble.worldlabs.ai/664f98ac-666d-4a38-b73d-47e0e0ed5b29/9ed26a17-1839-42f3-ab8c-ad1aa84707a1_panos/rgb_0.png"
+      },
+      "splats": {
+        "spz_urls": {
+          "500k": "https://cdn.marble.worldlabs.ai/664f98ac-666d-4a38-b73d-47e0e0ed5b29/99bff349-b069-4afa-b557-50e2dec6aa4f_ceramic_500k.spz",
+          "100k": "https://cdn.marble.worldlabs.ai/664f98ac-666d-4a38-b73d-47e0e0ed5b29/592455b5-d571-43fe-9640-30a6cf2a1fdc_dust_100k.spz",
+          "150k": "https://cdn.marble.worldlabs.ai/664f98ac-666d-4a38-b73d-47e0e0ed5b29/5e73a645-b676-4b32-b389-4250973d8221_ceramic_150k.spz",
+          "full_res": "https://cdn.marble.worldlabs.ai/664f98ac-666d-4a38-b73d-47e0e0ed5b29/44c7ed9d-4520-4b02-bdc0-fb1a0be84908_ceramic.spz"
+        },
+        "semantics_metadata": {
+          "metric_scale_factor": 2.515559,
+          "ground_plane_offset": 1.3734298
+        }
+      },
+      "thumbnail_url": "https://cdn.marble.worldlabs.ai/664f98ac-666d-4a38-b73d-47e0e0ed5b29/557566a4-c3d2-4749-aafc-cfb81fac2879_sand_mpi/thumbnail.webp",
+      "caption": "The scene is a dense forest landscape, captured in a realistic style, showcasing a serene and untouched natural environment. The overall tone is peaceful and tranquil, with lush greenery and soft, natural light filtering through the trees. The forest floor is covered with a thick layer of fallen leaves and twigs, creating a soft, natural carpet. Numerous trees of varying heights and widths populate the area, their trunks rising vertically towards the sky. Some trees are slender with smooth bark, while others are robust with rough, textured bark. The foliage ranges from vibrant green to darker, more muted shades, indicating different species and stages of growth. In some areas, the trees are more densely packed, forming a thick canopy, while in others, they are more scattered, allowing more light to penetrate. Patches of undergrowth and smaller plants are interspersed among the larger trees, adding to the biodiversity of the forest. In the distance, a road or clearing is faintly visible, hinting at the edge of this natural expanse. The trees are distributed throughout the scene, with some closer to the foreground and others receding into the background, creating a sense of depth. The fallen leaves and debris cover the entire ground area between the trees. The 360 scene is faultless."
+    },
+    "created_at": null,
+    "updated_at": null,
+    "permission": {
+      "public": false,
+      "allowed_readers": [],
+      "allowed_writers": [],
+      "allow_id_access": false
+    },
+    "world_prompt": null,
+    "world_marble_url": "https://marble.worldlabs.ai/world/664f98ac-666d-4a38-b73d-47e0e0ed5b29",
+    "model": null
+  }
+}
