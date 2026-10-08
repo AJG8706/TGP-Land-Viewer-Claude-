@@ -3,35 +3,30 @@
   "worlds": [
     {
       "id": "warren-cr4800/a",
-      "display_name": "Warren CR 4800 - listing photo",
-      "inputs": ["input/warren-cr4800/IMG_2095.jpeg"]
+      "display_name": "Warren CR 4800 - cleared lot with sign",
+      "inputs": ["input/warren-cr4800/IMG_2101.jpeg"]
     },
     {
       "id": "warren-cr4800/b",
-      "display_name": "Warren CR 4800 - multi-image",
+      "display_name": "Warren CR 4800 - gate and fence corner",
       "inputs": [
-        "input/warren-cr4800/IMG_2113.jpeg",
-        "input/warren-cr4800/IMG_2114.jpeg",
-        "input/warren-cr4800/IMG_2115.jpeg",
+        "input/warren-cr4800/IMG_2104.jpeg",
+        "input/warren-cr4800/IMG_2110.jpeg",
+        "input/warren-cr4800/IMG_2112.jpeg",
         "input/warren-cr4800/IMG_2116.jpeg",
-        "input/warren-cr4800/IMG_2117.jpeg",
         "input/warren-cr4800/IMG_2118.jpeg",
-        "input/warren-cr4800/IMG_2119.jpeg",
         "input/warren-cr4800/IMG_2120.jpeg"
       ]
     },
     {
       "id": "beaumont-broussard/a",
-      "display_name": "Beaumont Broussard Rd - listing photo",
-      "inputs": ["input/beaumont-broussard/20240712_095410.jpg"]
+      "display_name": "Beaumont Broussard Rd - cleared woods",
+      "inputs": ["input/beaumont-broussard/20240712_095617.jpg"]
     },
     {
       "id": "beaumont-broussard/b",
-      "display_name": "Beaumont Broussard Rd - multi-image",
+      "display_name": "Beaumont Broussard Rd - woods toward the road",
       "inputs": [
-        "input/beaumont-broussard/20240712_095646.jpg",
-        "input/beaumont-broussard/20240712_095647.jpg",
-        "input/beaumont-broussard/20240712_095650.jpg",
         "input/beaumont-broussard/20240712_095656.jpg",
         "input/beaumont-broussard/20240712_095659.jpg",
         "input/beaumont-broussard/20240712_095702.jpg"

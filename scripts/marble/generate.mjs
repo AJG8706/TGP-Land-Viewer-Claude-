@@ -4,8 +4,9 @@
 //   node scripts/marble/generate.mjs estimate         free: checks inputs, prices each world, shows balance
 //   node scripts/marble/generate.mjs run <lot>/<a|b>  spends credits on one world
 //
-// Reads the API key from WLT_API_KEY (WORLDLABS_API_ORIGIN overrides the
-// API host, e.g. for a local mock). Each world is saved to
+// Sends the API key from WLT_API_KEY when it is set; in a cloud session with a
+// network secret for api.worldlabs.ai the agent proxy adds the key instead
+// (WORLDLABS_API_ORIGIN overrides the API host, e.g. for a local mock). Each world is saved to
 // worlds/<lot>/<variant>/ as world.json plus its splats, pano and thumbnail.
 // Meshes are never downloaded and the paid HQ mesh export is never requested.
 
@@ -29,13 +30,18 @@ const MIME = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'i
 
 async function api(method, endpoint, body) {
   const key = process.env.WLT_API_KEY;
-  if (!key) throw new Error('WLT_API_KEY is not set in this environment.');
   const res = await fetch(API + endpoint, {
     method,
-    headers: { 'WLT-Api-Key': key, ...(body ? { 'Content-Type': 'application/json' } : {}) },
+    headers: { ...(key ? { 'WLT-Api-Key': key } : {}), ...(body ? { 'Content-Type': 'application/json' } : {}) },
     body: body ? JSON.stringify(body) : undefined,
   });
   const text = await res.text();
+  if (res.status === 401) {
+    throw new Error(
+      `${method} ${endpoint} -> 401: no valid API key reached World Labs. Set WLT_API_KEY, or make the ` +
+        'network secret for api.worldlabs.ai send the key in a WLT-Api-Key header with no prefix.',
+    );
+  }
   if (!res.ok) throw new Error(`${method} ${endpoint} -> ${res.status}: ${text.slice(0, 500)}`);
   return text ? JSON.parse(text) : {};
 }
@@ -49,18 +55,41 @@ async function exists(file) {
   }
 }
 
-// Reads pixel dimensions from a JPEG SOF marker or a PNG IHDR chunk.
+// Reads the EXIF orientation (1-8) from a JPEG APP1 segment body; 1 when absent.
+function exifOrientation(seg) {
+  try {
+    if (seg.toString('latin1', 0, 6) !== 'Exif\0\0') return 1;
+    const tiff = seg.subarray(6);
+    const le = tiff.toString('latin1', 0, 2) === 'II';
+    const u16 = (o) => (le ? tiff.readUInt16LE(o) : tiff.readUInt16BE(o));
+    const ifd = le ? tiff.readUInt32LE(4) : tiff.readUInt32BE(4);
+    for (let n = u16(ifd), e = ifd + 2; n > 0; n--, e += 12) {
+      if (u16(e) === 0x0112) return u16(e + 8);
+    }
+  } catch {
+    // Malformed EXIF: treat the pixels as upright.
+  }
+  return 1;
+}
+
+// Reads the upright pixel dimensions from a JPEG SOF marker (swapped when the
+// EXIF orientation turns the image a quarter turn) or a PNG IHDR chunk.
 function imageSize(buf) {
   if (buf.readUInt32BE(0) === 0x89504e47) {
-    return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
+    return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20), orientation: 1 };
   }
   let i = 2;
+  let orientation = 1;
   while (i + 9 < buf.length && buf[i] === 0xff) {
     const marker = buf[i + 1];
+    const length = buf.readUInt16BE(i + 2);
+    if (marker === 0xe1) orientation = exifOrientation(buf.subarray(i + 4, i + 2 + length));
     if (marker >= 0xc0 && marker <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marker)) {
-      return { width: buf.readUInt16BE(i + 7), height: buf.readUInt16BE(i + 5) };
+      const width = buf.readUInt16BE(i + 7);
+      const height = buf.readUInt16BE(i + 5);
+      return orientation >= 5 ? { width: height, height: width, orientation } : { width, height, orientation };
     }
-    i += 2 + buf.readUInt16BE(i + 2);
+    i += 2 + length;
   }
   return null;
 }
@@ -83,12 +112,14 @@ async function checkInputs(world) {
     const ext = path.extname(file).slice(1).toLowerCase();
     if (!MIME[ext]) problems.push(`unsupported type ${rel}`);
     const size = imageSize(await readFile(file));
-    sizes.push(size ? `${size.width}x${size.height}` : 'unknown');
+    // The API docs don't say whether the EXIF rotation tag is honored, so a
+    // rotated image never counts as matching an unrotated one.
+    sizes.push(size ? `${size.width}x${size.height}${size.orientation === 1 ? '' : ' (rotated)'}` : 'unknown');
   }
   if (world.inputs.length > MAX_MULTI_IMAGES) {
     problems.push(`${world.inputs.length} images; reconstruction takes at most ${MAX_MULTI_IMAGES}`);
   }
-  // Auto layout requires every image to share one resolution.
+  // Auto layout requires every image to share one resolution and aspect ratio.
   if (world.inputs.length > 1 && new Set(sizes).size > 1) {
     problems.push(`mixed resolutions: ${[...new Set(sizes)].join(', ')}`);
   }
